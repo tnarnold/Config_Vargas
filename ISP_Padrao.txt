@@ -1,0 +1,40 @@
+
+
+
+[admin@ISP_Padrao] > export
+# 2025-10-12 20:16:17 by RouterOS 7.16.1
+# software id = Q4VH-VZSL
+#
+/interface ethernet
+set [ find default-name=ether1 ] disable-running-check=no
+set [ find default-name=ether2 ] disable-running-check=no
+set [ find default-name=ether3 ] disable-running-check=no
+set [ find default-name=ether4 ] disable-running-check=no
+set [ find default-name=ether5 ] disable-running-check=no
+/interface pppoe-client
+add add-default-route=yes disabled=no interface=ether2 name=pppoe-out1 user=\
+    ncxuser1
+/ip pool
+add name=Pool-Remote ranges=100.64.100.0/24
+/port
+set 0 name=serial0
+/ppp profile
+add dns-server=8.8.8.8 local-address=10.64.100.1 name=profile1 \
+    remote-address=Pool-Remote
+/interface pppoe-server server
+add disabled=no interface=ether3 service-name=service1
+/ip address
+add address=192.168.0.1/24 interface=ether1 network=192.168.0.0
+/ip dns
+set allow-remote-requests=yes servers=8.8.8.8
+/ip firewall nat
+add action=src-nat chain=srcnat src-address=192.168.0.0/24 to-addresses=\
+    201.67.20.65
+add action=src-nat chain=srcnat out-interface=pppoe-out1 src-address=\
+    100.64.100.0/24 to-addresses=201.67.20.65
+/ppp secret
+add name=luana profile=profile1 service=pppoe
+/system identity
+set name=ISP_Padrao
+/system note
+set show-at-login=no
