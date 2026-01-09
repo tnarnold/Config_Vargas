@@ -1,8 +1,5 @@
-
-
-
-[admin@ISP_Padrao] > export
-# 2025-10-12 20:16:17 by RouterOS 7.16.1
+[admin@ISP_Padrao] > export 
+# 2026-01-09 23:19:57 by RouterOS 7.20.2
 # software id = Q4VH-VZSL
 #
 /interface ethernet
@@ -14,26 +11,167 @@ set [ find default-name=ether5 ] disable-running-check=no
 /interface pppoe-client
 add add-default-route=yes disabled=no interface=ether2 name=pppoe-out1 user=\
     ncxuser1
+/interface vlan
+add interface=ether5 name=e5v101 vlan-id=101
+add interface=ether5 name=e5v102 vlan-id=102
+add arp=disabled interface=ether5 name=e5v103 vlan-id=103
 /ip pool
 add name=Pool-Remote ranges=100.64.100.0/24
+add name=dhcp_pool1 ranges=192.168.100.2-192.168.100.254
+add name=dhcp_pool2 ranges=192.168.101.2-192.168.101.254
+add name=dhcp_pool3 ranges=192.168.102.2-192.168.102.254
+add name=dhcp_pool4 ranges=192.168.103.2-192.168.103.254
+add name=pgcorte ranges=10.64.100.0/24
+/ip dhcp-server
+add address-pool=dhcp_pool1 interface=ether5 name=dhcp1 use-radius=yes
+add add-arp=yes address-pool=dhcp_pool2 interface=e5v101 name=dhcp2 \
+    use-radius=yes
+add add-arp=yes address-pool=dhcp_pool3 interface=e5v102 name=dhcp3 \
+    use-radius=yes
+add add-arp=yes address-pool=dhcp_pool4 interface=e5v103 name=dhcp4 \
+    use-radius=yes
 /port
 set 0 name=serial0
 /ppp profile
-add dns-server=8.8.8.8 local-address=10.64.100.1 name=profile1 \
-    remote-address=Pool-Remote
+add change-tcp-mss=yes dns-server=1.1.1.1 local-address=10.64.100.0 name=\
+    profile1 remote-address=Pool-Remote use-compression=no use-encryption=yes \
+    use-ipv6=no use-mpls=no
+/snmp community
+set [ find default=yes ] addresses=172.31.255.2/32
+/app
+set transmission comment="BitTorrent client"
+set jellyfin comment="Free and open-source media server"
+set home-assistant comment="Home automation software"
+set plex comment="Plex organizes video, music and photos from personal media l\
+    ibraries and streams them to smart TVs, streaming boxes and mobile devices\
+    "
+set radarr comment=\
+    "Radarr is a movie collection manager for Usenet and BitTorrent users"
+set sonarr comment="Sonarr is a personal video recorder tailored for Usenet an\
+    d BitTorrent users"
+set readarr comment=\
+    "Readarr - Book Manager and Automation (Sonarr for Ebooks)"
+set lidarr comment=\
+    "Lidarr is a music collection manager for Usenet and BitTorrent users."
+set prowlarr comment="Prowlarr is a indexer manager/proxy built on the popular\
+    \_arr .net/reactjs base stack to integrate with your various PVR apps. Pro\
+    wlarr supports both Torrent Trackers and Usenet Indexers. It integrates se\
+    amlessly with Sonarr, Radarr, Lidarr, and Readarr offering complete manage\
+    ment of your indexers with no per app Indexer setup required (we do it all\
+    )."
+set nzbget comment="Nzbget is a usenet downloader"
+set tor comment=\
+    "Tor is a free overlay network for enabling anonymous communication"
 /interface pppoe-server server
-add disabled=no interface=ether3 service-name=service1
+add default-profile=profile1 disabled=no interface=ether3 \
+    one-session-per-host=yes service-name=service1
+add authentication=mschap1,mschap2 default-profile=profile1 disabled=no \
+    interface=ether4 one-session-per-host=yes service-name=service2
 /ip address
 add address=192.168.0.1/24 interface=ether1 network=192.168.0.0
+add address=192.168.100.1/24 interface=ether5 network=192.168.100.0
+add address=192.168.101.1/24 interface=e5v101 network=192.168.101.0
+add address=192.168.102.1/24 interface=e5v102 network=192.168.102.0
+add address=192.168.103.1/24 interface=e5v103 network=192.168.103.0
+add address=192.168.10.1/24 interface=ether4 network=192.168.10.0
+add address=172.31.255.1/24 interface=ether4 network=172.31.255.0
+/ip dhcp-server network
+add address=192.168.100.0/24 gateway=192.168.100.1
+add address=192.168.101.0/24 dhcp-option=*1 dhcp-option-set=*1 gateway=\
+    192.168.101.1
+add address=192.168.102.0/24 gateway=192.168.102.1 netmask=24
+add address=192.168.103.0/24 gateway=192.168.103.1 netmask=24
 /ip dns
 set allow-remote-requests=yes servers=8.8.8.8
+/ip firewall filter
+add action=drop chain=teste comment=\
+    "TESTE DO MK-AUTH PARA USO COM SSH fba6a686aa5d6" disabled=yes
+add action=drop chain=teste comment=\
+    "TESTE DO MK-AUTH PARA USO COM SSH e257ed138dad1" disabled=yes
+add action=drop chain=teste comment=\
+    "TESTE DO MK-AUTH PARA USO COM SSH 1f42790c6c88b" disabled=yes
 /ip firewall nat
-add action=src-nat chain=srcnat src-address=192.168.0.0/24 to-addresses=201.67.20.65 out-interface=pppoe-out1
+add action=src-nat chain=srcnat src-address=192.168.0.0/24 to-addresses=\
+    201.67.20.65
+add action=src-nat chain=srcnat dst-address=!192.168.10.10 src-address=\
+    192.168.10.0/24 to-addresses=201.67.20.65
 add action=src-nat chain=srcnat out-interface=pppoe-out1 src-address=\
     100.64.100.0/24 to-addresses=201.67.20.65
+add action=src-nat chain=srcnat out-interface=pppoe-out1 src-address=\
+    192.168.102.0/24 to-addresses=201.67.20.65
+add action=src-nat chain=srcnat out-interface=pppoe-out1 src-address=\
+    172.31.255.0/24 to-addresses=201.67.20.65
+add action=src-nat chain=srcnat out-interface=pppoe-out1 src-address=\
+    192.168.101.0/24 to-addresses=201.67.20.65
+add action=src-nat chain=srcnat out-interface=pppoe-out1 src-address=\
+    192.168.103.0/24 to-addresses=201.67.20.65
+add action=src-nat chain=srcnat src-address=192.168.0.0/24 to-addresses=\
+    201.67.20.65
+add action=src-nat chain=srcnat out-interface=pppoe-out1 src-address=\
+    100.64.100.0/24 to-addresses=201.67.20.65
+/ppp aaa
+set use-radius=yes
 /ppp secret
-add name=luana profile=profile1 service=pppoe
+add disabled=yes name=luanarelay profile=profile1 service=pppoe
+/radius
+add address=127.0.0.1 disabled=yes service=dhcp
+add address=172.31.255.2 realm=senhaforte require-message-auth=no service=\
+    ppp,dhcp src-address=172.31.255.1
+/radius incoming
+set accept=yes
+/snmp
+set contact=suporte@netcorex.com.br enabled=yes location=POA
 /system identity
 set name=ISP_Padrao
+/system logging
+add disabled=yes topics=radius,debug
+add disabled=yes topics=pppoe,debug
 /system note
 set show-at-login=no
+/system scheduler
+add interval=30m name=ler_pgcorte on-event=":execute script=ler_pgcorte;" \
+    policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+    start-date=2025-10-30 start-time=23:34:41
+/system script
+add dont-require-permissions=no name=pcorte owner=admin policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="/\
+    system scheduler add interval=30m name=ler_pgcorte on-event=\":execute scr\
+    ipt=ler_pgcorte;\"\r\
+    \n/system script add name=ler_pgcorte source=\"#==========================\
+    =====\\r\\\r\
+    \n    \\n:global IPMKAUTH \\\"172.31.255.2\\\"; \\r\\\r\
+    \n    \\n:global USER \\\"User_94da3bd0a9f808023869aac528d65ce9\\\"; \\r\\\
+    \r\
+    \n    \\n:global PASS \\\"Pass_c2e30d1162b769c951b2005413a459fcfe705ef2\\\
+    \"; \\r\\\r\
+    \n    \\n:global done \\\"\\\";\\r\\\r\
+    \n    \\n/tool fetch user=\\\$USER password=\\\$PASS url=\\\"https://\\\$I\
+    PMKAUTH/mkt/pgcorte\\\" dst-path=mkt_pgcorte.rsc;\\r\\\r\
+    \n    \\n:set done \\\"true\\\";\\r\\\r\
+    \n    \\n\\r\\\r\
+    \n    \\n:if ( [/file find name=mkt_pgcorte.rsc] != \\\"\\\" ) do={\\r\\\r\
+    \n    \\n   :log warning \\\"Importando PgCorte\\\";\\r\\\r\
+    \n    \\n   /import mkt_pgcorte.rsc;\\r\\\r\
+    \n    \\n   /file remove mkt_pgcorte.rsc;\\r\\\r\
+    \n    \\n}\\r\\\r\
+    \n    \\n\"\r\
+    \n"
+add dont-require-permissions=no name=ler_pgcorte owner=admin policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="#\
+    ===============================\r\
+    \n:global IPMKAUTH \"172.31.255.2\"; \r\
+    \n:global USER \"User_94da3bd0a9f808023869aac528d65ce9\"; \r\
+    \n:global PASS \"Pass_c2e30d1162b769c951b2005413a459fcfe705ef2\"; \r\
+    \n:global done \"\";\r\
+    \n/tool fetch user=\$USER password=\$PASS url=\"https://\$IPMKAUTH/mkt/pgc\
+    orte\" dst-path=mkt_pgcorte.rsc;\r\
+    \n:set done \"true\";\r\
+    \n\r\
+    \n:if ( [/file find name=mkt_pgcorte.rsc] != \"\" ) do={\r\
+    \n   :log warning \"Importando PgCorte\";\r\
+    \n   /import mkt_pgcorte.rsc;\r\
+    \n   /file remove mkt_pgcorte.rsc;\r\
+    \n}\r\
+    \n"
+/tool bandwidth-server
+set enabled=no
